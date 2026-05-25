@@ -1,0 +1,10 @@
+[Unit]
+Description=Run zombie-reaper every 6 hours (system scope)
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=6h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

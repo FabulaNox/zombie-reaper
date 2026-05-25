@@ -1,0 +1,87 @@
+.TH ZOMBIE-REAPER 1 "2026-05-20" "zombie-reaper" "User Commands"
+.SH NAME
+zombie-reaper \- detect and safely reap zombie processes
+.SH SYNOPSIS
+.B zombie-reaper
+.RB [ \-\-list | \-\-nudge | \-\-dry\-run ]
+.SH DESCRIPTION
+.B zombie-reaper
+finds processes in the
+.B Z
+(zombie) state and sends
+.B SIGCHLD
+to their parent processes, which prompts the parent to call
+.BR wait (2)
+and reap the zombie. A zombie process is already dead and cannot itself be
+.BR kill (1) ed.
+.SH OPTIONS
+.TP
+.B \-\-list
+(Default.) Report zombies and the recommended action. No signals sent.
+.TP
+.B \-\-nudge
+Send
+.B SIGCHLD
+to each unique parent of a zombie.
+.TP
+.B \-\-dry\-run
+Show what
+.B \-\-nudge
+would do without actually sending any signal.
+.SH ENVIRONMENT
+.TP
+.B ZOMBIE_REAPER_PROTECTED
+Extended-regex alternation of parent process names that should only ever
+receive
+.BR SIGCHLD ,
+never any escalation. The regex is anchored with
+.B ^...$
+internally, so write only the alternation (e.g.
+.BR foo|bar|baz ).
+Default:
+.BR systemd|init|wazuh|ossec|dockerd|containerd|sshd .
+.TP
+.B ZOMBIE_REAPER_STALE_SECS
+Seconds above which a zombie is considered "stale" and produces a
+.B warn
+log line. Default 302400 (3.5 days).
+.TP
+.B ZOMBIE_REAPER_LOG
+Path to the append-only JSONL run log. One JSON object is appended per run with
+run totals and a per-parent found/reaped tally. Defaults to
+.B /var/log/zombie-reaper/reaper.jsonl
+when run as root, otherwise
+.BR $XDG_STATE_HOME/zombie-reaper/reaper.jsonl .
+Set to the empty string to disable file logging (journal only).
+.TP
+.B ZOMBIE_REAPER_LOG_MAX_BYTES
+Rotate the log to
+.B <path>.1
+once it reaches this size in bytes. Default 1048576 (1 MiB); total on-disk
+footprint is bounded to twice this value.
+.SH FILES
+.TP
+.B ~/.config/systemd/user/zombie-reaper.{service,timer}
+User-scope systemd unit.
+.TP
+.B /etc/systemd/system/zombie-reaper.{service,timer}
+System-scope systemd unit.
+.TP
+.B /var/log/zombie-reaper/reaper.jsonl
+Default system-scope JSONL run log (root). User scope:
+.BR $XDG_STATE_HOME/zombie-reaper/reaper.jsonl .
+.SH EXIT STATUS
+.B 0
+on success. Non-zero on unexpected error.
+.SH PERMISSIONS
+.B zombie-reaper
+can only send
+.B SIGCHLD
+to parents it has permission to signal: same UID, or root. A user-scope
+install will silently fail to nudge zombies whose parents are owned by other
+users. Install system-scope for full coverage.
+.SH SEE ALSO
+.BR ps (1),
+.BR kill (1),
+.BR wait (2),
+.BR systemd.timer (5)

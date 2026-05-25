@@ -1,0 +1,10 @@
+[Unit]
+Description=Zombie process reaper (user scope)
+Documentation=man:zombie-reaper(1)
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/zombie-reaper --nudge
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=zombie-reaper
